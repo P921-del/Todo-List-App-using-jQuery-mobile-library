@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <!--Sweet Alert Usage-->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <title>TodoList App</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      .todo-container {
+        width: 600px;
+        margin: 30px auto 0;
+        background-color: #f6f6f6;
+      }
+      .todo-task {
+        padding: 15px;
+        background-color: #009688;
+        position: relative;
+      }
+      .todo-task input {
+        display: block;
+        width: calc(100%-15px);
+        padding: 10px 15px;
+        border: none;
+        background-color: rgb(255, 255, 255, 0.3);
+        color: #fff;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-role="page" id="page1" data-theme="a">
+      <div data-role="header" data-position="fixed">
+        <h1>TodoList App</h1>
+      </div>
+      <div data-role="content">
+        <div data-enhance="true" class="todo-container">
+          <div data-enhance="false" class="add-task">
+            <input
+              data-enhance="false"
+              type="text"
+              id="text-added"
+              placeholder="Add a task"
+              onkeypress="return onlyAlphabets(event);"
+            />
+            <button data-icon="plus" type="submit" id="addButton">
+              Add a task
+            </button>
+          </div>
+          <ul
+            data-role="listview"
+            data-split-icon="delete"
+            id="tasks-container"
+          ></ul>
+        </div>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h1>@copywrite 2024</h1>
+      </div>
+    </div>
+    <div data-role="page" id="EditTask" data-theme="a">
+      <div data-role="header" data-position="fixed">
+        <h1>TodoList App</h1>
+      </div>
+      <div data-role="content">
+        <form method="" action="" data-ajax="false">
+          <input
+            type="text"
+            value=""
+            data-id="0"
+            id="editedText"
+            focused="true"
+            onkeypress="return onlyAlphabets(event);"
+          />
+          <a href="#page1" class="ui-btn" id="editeTask">Edit Task</a>
+        </form>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h1>@copywrite 2024</h1>
+      </div>
+    </div>
+    <script>
+      $(document).ready(() => {
+        $("#text-added").focus();
+        Task.showAllTasksFromLocalStorage();
+        $("#addButton").click(() => {
+          submitFirstForm();
+        });
+        document
+          .getElementById("text-added")
+          .addEventListener("keypress", function (e) {
+            if (e.keyCode === 13) {
+              submitFirstForm();
+            }
+          });
+        //remove from listview
+        document
+          .getElementById("tasks-container")
+          .addEventListener("click", (e) => {
+            if (e.target.classList.contains("deleteMe")) {
+              //remove from local storage (back)
+              const id = e.target.getAttribute("data-id");
+              const oldTasks = JSON.parse(localStorage.getItem("tasks"));
+              const newTasks = oldTasks.filter((item) => item.id != id);
+              localStorage.setItem("tasks", JSON.stringify(newTasks));
+              // remove from front
+              e.target.parentElement.remove();
+              //the listview here understands the cahnages
+              if (localStorage.getItem("tasks")) {
+                const showAll = JSON.parse(localStorage.getItem("tasks"));
+                if (showAll.length === 0) {
+                  document.getElementById("addButton").textContent =
+                    "No Tasks To Show";
+                } else {
+                  document.getElementById("addButton").textContent =
+                    "Add a task";
+                }
+              }
+            }
+            if (e.target.classList.contains("editeMe")) {
+              //remove from local storage (back)
+              const id = e.target.getAttribute("data-id");
+              const oldTask = JSON.parse(localStorage.getItem("tasks")).find(
+                (item) => item.id === +id
+              );
+              $("#EditTask").on("pageshow", () => {
+                $("#editedText").focus();
+              });
+              $("#editedText").val(oldTask.name);
+              document
+                .getElementById("editedText")
+                .setAttribute("data-id", oldTask.id);
+              $("#page1").on("pageshow", () => {
+                $("#text-added").focus();
+              });
+            }
+          });
+        $("#editeTask").on("click", function (e) {
+          submitSecondForm();
+        });
+        $("#editedText").on("keypress", function (e) {
+          if (e.keyCode === 13) {
+            submitSecondForm();
+          }
+        });
+      });
+      class Task {
+        constructor(id, name) {
+          this.id = id;
+          this.name = name;
+        }
+        storeTaskInLocalStorage() {
+          const allData = JSON.parse(localStorage.getItem("tasks")) ?? [];
+          allData.push({ id: this.id, name: this.name });
+          localStorage.setItem("tasks", JSON.stringify(allData));
+        }
+        static showAllTasksFromLocalStorage() {
+          if (localStorage.getItem("tasks")) {
+            const showAll = JSON.parse(localStorage.getItem("tasks"));
+            if (showAll.length > 0) {
+              document.getElementById("tasks-container").innerHTML = "";
+              showAll.forEach((item) => {
+                Task.showInHtml(item.id, item.name);
+              });
+              document.getElementById("addButton").textContent = "Add a task";
+            } else {
+              document.getElementById("addButton").textContent =
+                "No Tasks To Show";
+            }
+          }
+        }
+        static showInHtml(id, name) {
+          const liElement = document.createElement("li");
+          liElement.innerHTML =
+            `<a href='#EditTask' data-id='` +
+            id +
+            `' class = 'editeMe'>` +
+            name +
+            `
+                  </a> <a href='' data-id='` +
+            id +
+            `' class='deleteMe' >Delete</a>`;
+          $("#tasks-container").append(liElement).listview("refresh");
+        }
+        addTask() {
+          Task.showInHtml(this.id, this.name);
+        }
+      }
+      //function to allow only alphabet to be print and show in the input
+      function onlyAlphabets(event) {
+        const key = event.which;
+        if (
+          key > 31 &&
+          key != 32 &&
+          (key < 65 || key > 90) &&
+          (key < 97 || key > 122)
+        ) {
+          return false;
+        }
+      }
+      function submitFirstForm() {
+        if ($("#text-added").val()) {
+          let text = $("#text-added").val();
+          //add in listview
+          let id = Math.floor(Math.random() * 100000);
+          const task = new Task(id, text);
+          task.storeTaskInLocalStorage();
+          task.addTask();
+          $("#text-added").val("");
+          if (localStorage.getItem("tasks")) {
+            const showAll = JSON.parse(localStorage.getItem("tasks"));
+            if (showAll.length === 0) {
+              document.getElementById("addButton").textContent =
+                "No Tasks To Show";
+            } else {
+              document.getElementById("addButton").textContent = "Add a task";
+            }
+          }
+        } else {
+          Swal.fire({
+            title: "Todo List App",
+            text: "please add a task",
+            icon: "error",
+            draggable: true,
+          });
+        }
+      }
+      function submitSecondForm() {
+        if (
+          +document.getElementById("editedText").getAttribute("data-id") !== 0
+        ) {
+          const id = document
+            .getElementById("editedText")
+            .getAttribute("data-id");
+          const oldTask = JSON.parse(localStorage.getItem("tasks")).find(
+            (item) => item.id === +id
+          );
+          const oldTasks = JSON.parse(localStorage.getItem("tasks"));
+          const newTasks = oldTasks.filter((item) => item.id != id);
+          const newTasksAfterEditOperation = [
+            ...newTasks,
+            {
+              id: oldTask.id,
+              name: document.getElementById("editedText").value,
+            },
+          ];
+          localStorage.setItem(
+            "tasks",
+            JSON.stringify(newTasksAfterEditOperation)
+          );
+
+          Task.showAllTasksFromLocalStorage();
+        }
+      }
+    </script>
+    <a></a>
+  </body>
+</html>
